@@ -1,0 +1,17 @@
+[Unit]
+Description=OpenRGB LED Lock/Unlock Monitor (KDE)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/openrgb-lock-monitor.sh
+Restart=on-failure
+RestartSec=3
+# DBus session için gerekli
+Environment=DISPLAY=:0
+# OpenRGB sunucusunun hazır olması için bekle (saniye)
+ExecStartPre=/bin/sleep 5
+
+[Install]
+WantedBy=graphical-session.target
