@@ -14,6 +14,7 @@ use tauri::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let tray_only = std::env::args().any(|a| a == "--tray");
     let rules = Arc::new(RwLock::new(config::load_rules().unwrap_or_default()));
 
     tauri::Builder::default()
@@ -21,6 +22,13 @@ pub fn run() {
         .manage(RulesState(rules.clone()))
         .setup(move |app| {
             watcher::start_watchers(rules);
+
+            // When launched with --tray (e.g. from autostart), keep window hidden.
+            if tray_only {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.hide();
+                }
+            }
 
             // Build tray menu
             let show = MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
@@ -105,6 +113,8 @@ pub fn run() {
             commands::get_openrgb_profiles,
             commands::get_openrgb_devices,
             commands::check_openrgb_available,
+            commands::get_autostart,
+            commands::set_autostart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

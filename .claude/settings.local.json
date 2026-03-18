@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(cargo build:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(find /home/oguz/openrgb-action-gui -type f \\\\\\(-name *.json -o -name *.toml -o -name *.html -o -name *.tsx -o -name *.ts -o -name *.rs -o -name *.md \\\\\\) ! -path */node_modules/* ! -path */.git/* ! -path */target/*)"
     ]
   }
 }
