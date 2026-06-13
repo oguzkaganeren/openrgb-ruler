@@ -6,29 +6,22 @@ pkgrel=1
 pkgdesc="GUI for automated RGB lighting control rules via OpenRGB"
 arch=('x86_64' 'aarch64')
 url="https://github.com/oguzkaganeren/openrgb-ruler"
-license=('GNU')
+license=('GPL3')
 depends=(
   'cairo'
+  'dbus'
   'desktop-file-utils'
   'gdk-pixbuf2'
   'glib2'
-  'gtk3'
+  'gtk4'
   'hicolor-icon-theme'
-  'libsoup'
   'pango'
-  'webkit2gtk-4.1'
   'openrgb'
 )
 makedepends=(
   'git'
   'rust'
   'cargo'
-  'nodejs'
-  'yarn'
-  'openssl'
-  'libappindicator-gtk3'
-  'librsvg'
-  'appmenu-gtk-module'
 )
 provides=('openrgb-ruler')
 conflicts=('openrgb-ruler')
@@ -45,17 +38,29 @@ pkgver() {
   )
 }
 
-prepare() {
-  cd openrgb-ruler
-  yarn install --frozen-lockfile
-}
-
 build() {
   cd openrgb-ruler
-  yarn tauri build -b deb
+  cargo build --release --locked
 }
 
 package() {
   cd openrgb-ruler
-  cp -a src-tauri/target/release/bundle/deb/openrgb-ruler_*/data/. "${pkgdir}"
+
+  install -Dm755 target/release/openrgb-ruler-gtk \
+    "${pkgdir}/usr/bin/openrgb-ruler-gtk"
+
+  install -Dm644 openrgb-ruler-gtk.desktop \
+    "${pkgdir}/usr/share/applications/openrgb-ruler-gtk.desktop"
+
+  install -Dm644 icons/32x32.png \
+    "${pkgdir}/usr/share/icons/hicolor/32x32/apps/openrgb-ruler.png"
+
+  install -Dm644 icons/64x64.png \
+    "${pkgdir}/usr/share/icons/hicolor/64x64/apps/openrgb-ruler.png"
+
+  install -Dm644 icons/128x128.png \
+    "${pkgdir}/usr/share/icons/hicolor/128x128/apps/openrgb-ruler.png"
+
+  install -Dm644 icons/icon.png \
+    "${pkgdir}/usr/share/icons/hicolor/256x256/apps/openrgb-ruler.png"
 }

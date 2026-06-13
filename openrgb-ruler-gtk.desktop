@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=OpenRGB Ruler
+Comment=Automated RGB lighting control rules via OpenRGB
+Exec=openrgb-ruler-gtk
+Icon=openrgb-ruler
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+Keywords=RGB;LED;OpenRGB;lighting;automation;
+StartupWMClass=openrgb-ruler-gtk

@@ -4,7 +4,13 @@
       "Bash(cargo build:*)",
       "Bash(cargo check:*)",
       "Bash(find /home/oguz/openrgb-action-gui -type f \\\\\\(-name *.json -o -name *.toml -o -name *.html -o -name *.tsx -o -name *.ts -o -name *.rs -o -name *.md \\\\\\) ! -path */node_modules/* ! -path */.git/* ! -path */target/*)",
-      "Bash(yarn tauri:*)"
+      "Bash(yarn tauri:*)",
+      "Bash(cargo new *)",
+      "Bash(mkdir -p icons)",
+      "Bash(cp src-tauri/icons/32x32.png icons/)",
+      "Bash(cp src-tauri/icons/64x64.png icons/)",
+      "Bash(cp src-tauri/icons/128x128.png icons/)",
+      "Bash(cp src-tauri/icons/icon.png icons/)"
     ]
   }
 }
