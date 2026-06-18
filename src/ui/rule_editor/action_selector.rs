@@ -64,6 +64,7 @@ impl ActionSelector {
         color_dialog.set_with_alpha(false);
         let color_btn = gtk4::ColorDialogButton::new(Some(color_dialog));
         color_btn.set_rgba(&gtk4::gdk::RGBA::new(1.0, 0.0, 0.0, 1.0));
+        color_entry.set_text("FF0000");
         color_row.append(&color_btn);
 
         // Sync: color picker → hex entry

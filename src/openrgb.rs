@@ -79,7 +79,7 @@ fn action_to_args(action: &RgbAction) -> Vec<String> {
                 let scale = |c: u8| -> u8 { (c as u32 * *percent as u32 / 100) as u8 };
                 format!("{:02X}{:02X}{:02X}", scale(r), scale(g), scale(b))
             };
-            vec!["-c".to_string(), hex]
+            vec!["-m".to_string(), "Static".to_string(), "-c".to_string(), hex]
         }
         RgbAction::LoadProfile { name } => vec!["-p".to_string(), name.clone()],
     }
