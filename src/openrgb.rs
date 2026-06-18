@@ -68,7 +68,7 @@ pub fn list_profiles() -> Result<Vec<String>, String> {
 
 fn action_to_args(action: &RgbAction) -> Vec<String> {
     match action {
-        RgbAction::TurnOff => vec!["-c".to_string(), "000000".to_string()],
+        RgbAction::TurnOff => vec!["-m".to_string(), "Off".to_string()],
         RgbAction::SetColor { hex, percent } => {
             let hex = if *percent == 100 {
                 hex.clone()

@@ -16,6 +16,14 @@ use action_selector::ActionSelector;
 use device_selector::DeviceSelector;
 use trigger_selector::TriggerSelector;
 
+fn show_error(parent: Option<&gtk4::Window>, msg: &str) {
+    let dialog = gtk4::AlertDialog::builder()
+        .message("Error")
+        .detail(msg)
+        .build();
+    dialog.show(parent);
+}
+
 /// Open the rule editor as a modal window.
 /// Pass `existing_rule = Some(rule)` for editing, `None` for adding.
 /// `on_saved` is called with the completed Rule when the user clicks Save.
@@ -123,10 +131,15 @@ pub fn open_editor(
     {
         let action_c = Rc::clone(&action_sel);
         let device_c = Rc::clone(&device_sel);
+        let win_weak = window.downgrade();
         test_btn.connect_clicked(move |_| {
-            if let Some(action) = action_c.get_action() {
-                let target = device_c.get_target();
-                let _ = openrgb::execute_action(&action, &target);
+            let Some(action) = action_c.get_action() else {
+                show_error(win_weak.upgrade().as_ref(), "Invalid action settings.\nCheck that the hex color is a valid 6-character value.");
+                return;
+            };
+            let target = device_c.get_target();
+            if let Err(e) = openrgb::execute_action(&action, &target) {
+                show_error(win_weak.upgrade().as_ref(), &format!("Test action failed:\n{e}"));
             }
         });
     }
