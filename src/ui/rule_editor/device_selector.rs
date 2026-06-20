@@ -33,7 +33,7 @@ impl DeviceSelector {
         specific_box.set_visible(false);
         specific_box.set_margin_start(8);
 
-        let devices = openrgb::list_devices().unwrap_or_default();
+        let devices = openrgb::list_devices_cached();
         let mut device_checks = Vec::new();
 
         if devices.is_empty() {

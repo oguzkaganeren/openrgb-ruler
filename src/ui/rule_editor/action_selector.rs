@@ -113,7 +113,7 @@ impl ActionSelector {
         stack.add_named(&color_vbox, Some("color"));
 
         // "profile" page
-        let profiles = openrgb::list_profiles().unwrap_or_default();
+        let profiles = openrgb::list_profiles_cached();
         let profile_strs: Vec<&str> = profiles.iter().map(|s| s.as_str()).collect();
         let profile_dropdown = if profile_strs.is_empty() {
             gtk4::DropDown::from_strings(&["(no profiles found)"])

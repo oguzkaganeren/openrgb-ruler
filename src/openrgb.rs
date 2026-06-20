@@ -1,5 +1,36 @@
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 use crate::model::{DeviceTarget, RgbAction, RgbDevice};
+
+static DEVICES_CACHE: OnceLock<Mutex<Vec<RgbDevice>>> = OnceLock::new();
+static PROFILES_CACHE: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
+
+/// Pre-warm device and profile caches in background threads so the editor
+/// opens instantly instead of blocking the GTK main thread.
+pub fn prefetch() {
+    std::thread::spawn(|| {
+        let devices = list_devices().unwrap_or_default();
+        let _ = DEVICES_CACHE.get_or_init(|| Mutex::new(devices));
+    });
+    std::thread::spawn(|| {
+        let profiles = list_profiles().unwrap_or_default();
+        let _ = PROFILES_CACHE.get_or_init(|| Mutex::new(profiles));
+    });
+}
+
+pub fn list_devices_cached() -> Vec<RgbDevice> {
+    if let Some(m) = DEVICES_CACHE.get() {
+        return m.lock().unwrap().clone();
+    }
+    list_devices().unwrap_or_default()
+}
+
+pub fn list_profiles_cached() -> Vec<String> {
+    if let Some(m) = PROFILES_CACHE.get() {
+        return m.lock().unwrap().clone();
+    }
+    list_profiles().unwrap_or_default()
+}
 
 pub fn is_available() -> bool {
     Command::new("openrgb")

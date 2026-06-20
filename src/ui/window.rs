@@ -172,18 +172,29 @@ impl SimpleComponent for AppWindow {
             glib::ControlFlow::Continue
         });
 
-        // Refresh OpenRGB status every 5 seconds
+        // Refresh OpenRGB status every 5 seconds.
+        // The actual subprocess runs in a background thread; the GTK timer
+        // only polls a channel (non-blocking, no main-thread jank).
+        let (status_tx, status_rx) = mpsc::channel::<bool>();
+        std::thread::spawn(move || {
+            loop {
+                std::thread::sleep(Duration::from_secs(5));
+                if status_tx.send(openrgb::is_available()).is_err() { break; }
+            }
+        });
         let status_weak = status_label.downgrade();
         glib::timeout_add_local(Duration::from_secs(5), move || {
             let Some(label) = status_weak.upgrade() else {
                 return glib::ControlFlow::Break;
             };
-            if openrgb::is_available() {
-                label.set_css_classes(&["status-ok"]);
-                label.set_tooltip_text(Some("OpenRGB: available"));
-            } else {
-                label.set_css_classes(&["status-err"]);
-                label.set_tooltip_text(Some("OpenRGB: not found"));
+            if let Ok(available) = status_rx.try_recv() {
+                if available {
+                    label.set_css_classes(&["status-ok"]);
+                    label.set_tooltip_text(Some("OpenRGB: available"));
+                } else {
+                    label.set_css_classes(&["status-err"]);
+                    label.set_tooltip_text(Some("OpenRGB: not found"));
+                }
             }
             glib::ControlFlow::Continue
         });

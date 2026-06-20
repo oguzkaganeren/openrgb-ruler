@@ -18,6 +18,8 @@ use ui::window::{AppInit, AppWindow};
 fn main() {
     let start_in_tray = env::args().any(|a| a == "--tray");
 
+    openrgb::prefetch();
+
     let rules = new_shared_rules();
     let (tray_tx, tray_rx) = mpsc::channel();
     let (watcher_tx, watcher_rx) = mpsc::channel::<watcher::WatcherEvent>();
