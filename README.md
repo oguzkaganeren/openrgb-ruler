@@ -6,9 +6,11 @@ Replace manual shell scripts with a GUI-configurable rules engine — lock your 
 
 ## Screenshots
 
-![Rules List](screens/image.png)
+![Empty Rules List](screens/image.png)
 
-![Rule Editor](screens/image%202.png)
+![Rule Editor — System Lock / Turn Off](screens/image2.png)
+
+![Rule Editor — Time of Day / Set Color](screens/image3.png)
 
 ## Features
 
