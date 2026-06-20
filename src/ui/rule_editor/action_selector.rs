@@ -29,7 +29,7 @@ pub struct ActionSelector {
     dropdown: gtk4::DropDown,
     color_entry: gtk4::Entry,
     color_btn: gtk4::ColorDialogButton,
-    brightness_spin: gtk4::SpinButton,
+    brightness_scale: gtk4::Scale,
     profile_dropdown: gtk4::DropDown,
     profiles: Vec<String>,
     stack: gtk4::Stack,
@@ -105,9 +105,12 @@ impl ActionSelector {
         let brightness_row = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         brightness_row.append(&gtk4::Label::new(Some("Brightness %:")));
         let adj = gtk4::Adjustment::new(100.0, 1.0, 100.0, 1.0, 10.0, 0.0);
-        let brightness_spin = gtk4::SpinButton::new(Some(&adj), 1.0, 0);
-        brightness_spin.set_numeric(true);
-        brightness_row.append(&brightness_spin);
+        let brightness_scale = gtk4::Scale::new(gtk4::Orientation::Horizontal, Some(&adj));
+        brightness_scale.set_digits(0);
+        brightness_scale.set_draw_value(true);
+        brightness_scale.set_value_pos(gtk4::PositionType::Left);
+        brightness_scale.set_hexpand(true);
+        brightness_row.append(&brightness_scale);
         color_vbox.append(&brightness_row);
 
         stack.add_named(&color_vbox, Some("color"));
@@ -135,7 +138,7 @@ impl ActionSelector {
             });
         }
 
-        ActionSelector { widget: vbox, dropdown, color_entry, color_btn, brightness_spin, profile_dropdown, profiles, stack }
+        ActionSelector { widget: vbox, dropdown, color_entry, color_btn, brightness_scale, profile_dropdown, profiles, stack }
     }
 
     pub fn load(&self, action: &RgbAction) {
@@ -150,7 +153,7 @@ impl ActionSelector {
                 if let Some(rgba) = hex_to_rgba(hex) {
                     self.color_btn.set_rgba(&rgba);
                 }
-                self.brightness_spin.set_value(*percent as f64);
+                self.brightness_scale.set_value(*percent as f64);
                 self.stack.set_visible_child_name("color");
             }
             RgbAction::LoadProfile { name } => {
@@ -172,7 +175,7 @@ impl ActionSelector {
                 if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
                     return None;
                 }
-                let percent = self.brightness_spin.value() as u8;
+                let percent = self.brightness_scale.value() as u8;
                 Some(RgbAction::SetColor { hex, percent })
             }
             2 => {
