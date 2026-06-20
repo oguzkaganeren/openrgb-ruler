@@ -27,24 +27,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Bump version
         id: version
         run: |
-          # Read current version from tauri.conf.json
-          CURRENT=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          CURRENT=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "Current version: $CURRENT"
 
-          # Split into parts
           MAJOR=$(echo $CURRENT | cut -d. -f1)
           MINOR=$(echo $CURRENT | cut -d. -f2)
           PATCH=$(echo $CURRENT | cut -d. -f3)
 
-          # Bump the requested part
           case "${{ github.event.inputs.bump }}" in
             major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
             minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
@@ -55,30 +50,14 @@ jobs:
           echo "New version: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-          # Update tauri.conf.json
-          node -e "
-            const fs = require('fs');
-            const cfg = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
-            cfg.version = '$NEW_VERSION';
-            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(cfg, null, 2) + '\n');
-          "
-
-          # Update package.json
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$NEW_VERSION';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
-          # Update Cargo.toml
-          sed -i "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"$NEW_VERSION\"/}" src-tauri/Cargo.toml
+          sed -i "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"$NEW_VERSION\"/}" Cargo.toml
+          cargo update --package openrgb-ruler-gtk
 
       - name: Commit and tag version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git add Cargo.toml Cargo.lock
           git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
           git tag "v${{ steps.version.outputs.new_version }}"
           git push origin HEAD:${{ github.ref_name }} --follow-tags
@@ -87,72 +66,46 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            librsvg2-dev \
-            patchelf \
+            libgtk-4-dev \
             libdbus-1-dev \
             pkg-config \
-            build-essential \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+            build-essential
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
 
-      - name: Install frontend dependencies
-        run: yarn install --frozen-lockfile
+      - name: Build
+        run: cargo build --release
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp target/release/openrgb-ruler-gtk dist/
+          tar -czf dist/openrgb-ruler-gtk-v${{ steps.version.outputs.new_version }}-linux-x86_64.tar.gz \
+            -C dist openrgb-ruler-gtk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tagName: v${{ steps.version.outputs.new_version }}
-          releaseName: 'OpenRGB Ruler v${{ steps.version.outputs.new_version }}'
-          releaseBody: |
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: OpenRGB Ruler v${{ steps.version.outputs.new_version }}
+          draft: false
+          prerelease: false
+          files: dist/openrgb-ruler-gtk-v${{ steps.version.outputs.new_version }}-linux-x86_64.tar.gz
+          body: |
             ## Changes in v${{ steps.version.outputs.new_version }}
 
             See the [commit history](https://github.com/${{ github.repository }}/commits/v${{ steps.version.outputs.new_version }}) for details.
 
             ## Installation
 
-            ### AppImage
-            Download the `.AppImage` file, make it executable and run:
+            Download the `.tar.gz`, extract and run:
             ```bash
-            chmod +x openrgb-ruler_*.AppImage
-            ./openrgb-ruler_*.AppImage
+            tar -xzf openrgb-ruler-gtk-v${{ steps.version.outputs.new_version }}-linux-x86_64.tar.gz
+            ./openrgb-ruler-gtk
             ```
-
-            ### Debian/Ubuntu (.deb)
-            ```bash
-            sudo dpkg -i openrgb-ruler_*.deb
-            ```
-
-            ### RPM (Fedora/openSUSE)
-            ```bash
-            sudo rpm -i openrgb-ruler-*.rpm
-            ```
-
-            ### Arch Linux (Based)
-            Install the `.deb` via `debtap`:
-            ```bash
-            # Install debtap if not already installed (AUR)
-            yay -S debtap
-            sudo debtap -u
-            debtap openrgb-ruler_*.deb
-            sudo pacman -U openrgb-ruler-*.pkg.tar.zst
-            ```
-            Or use the AppImage directly (no conversion needed).
 
             ## Requirements
+            - GTK4 runtime libraries (`libgtk-4-1`)
             - OpenRGB must be installed and accessible in PATH
             - DBus session bus (standard on KDE/GNOME)
-          releaseDraft: false
-          prerelease: false
-          includeUpdaterJson: false
