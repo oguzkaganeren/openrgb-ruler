@@ -53,15 +53,6 @@ jobs:
           sed -i "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"$NEW_VERSION\"/}" Cargo.toml
           cargo update --package openrgb-ruler-gtk
 
-      - name: Commit and tag version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Cargo.toml Cargo.lock
-          git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
-          git tag "v${{ steps.version.outputs.new_version }}"
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -78,11 +69,29 @@ jobs:
         run: cargo build --release
 
       - name: Package binary
+        id: package
         run: |
-          mkdir -p dist
+          mkdir -p dist/icons
           cp target/release/openrgb-ruler-gtk dist/
-          tar -czf dist/openrgb-ruler-gtk-v${{ steps.version.outputs.new_version }}-linux-x86_64.tar.gz \
-            -C dist openrgb-ruler-gtk
+          cp openrgb-ruler-gtk.desktop dist/
+          cp icons/32x32.png icons/64x64.png icons/128x128.png icons/icon.png dist/icons/
+          TARBALL="dist/openrgb-ruler-gtk-v${{ steps.version.outputs.new_version }}-linux-x86_64.tar.gz"
+          tar -czf "$TARBALL" -C dist openrgb-ruler-gtk openrgb-ruler-gtk.desktop icons
+          echo "sha256=$(sha256sum "$TARBALL" | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Update PKGBUILD
+        run: |
+          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.new_version }}/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${{ steps.package.outputs.sha256 }}')/" PKGBUILD
+
+      - name: Commit and tag version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock PKGBUILD
+          git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin HEAD:${{ github.ref_name }} --follow-tags
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
