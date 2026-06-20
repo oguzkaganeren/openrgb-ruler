@@ -84,19 +84,19 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.new_version }}/" PKGBUILD
           sed -i "s/^sha256sums=.*/sha256sums=('${{ steps.package.outputs.sha256 }}')/" PKGBUILD
 
-      - name: Commit and tag version bump
+      - name: Commit and push version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Cargo.toml Cargo.lock PKGBUILD
           git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
-          git tag "v${{ steps.version.outputs.new_version }}"
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
+          git push origin HEAD:${{ github.ref_name }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.new_version }}
+          target_commitish: ${{ github.ref_name }}
           name: OpenRGB Ruler v${{ steps.version.outputs.new_version }}
           draft: false
           prerelease: false
