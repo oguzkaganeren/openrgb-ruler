@@ -27,7 +27,7 @@ pub struct TriggerSelector {
     pub widget: gtk4::Box,
     dropdown: gtk4::DropDown,
     process_entry: gtk4::Entry,
-    idle_spin: gtk4::SpinButton,
+    idle_entry: gtk4::Entry,
     time_entry: gtk4::Entry,
     day_buttons: Vec<gtk4::CheckButton>,
     stack: gtk4::Stack,
@@ -54,13 +54,36 @@ impl TriggerSelector {
         proc_box.append(&process_entry);
         stack.add_named(&proc_box, Some("process"));
 
-        // "idle" page — seconds spin
-        let idle_adj = gtk4::Adjustment::new(60.0, 1.0, 86400.0, 1.0, 60.0, 0.0);
-        let idle_spin = gtk4::SpinButton::new(Some(&idle_adj), 1.0, 0);
-        idle_spin.set_numeric(true);
+        // "idle" page — explicit -/+ buttons around a plain entry
+        let idle_entry = gtk4::Entry::new();
+        idle_entry.set_text("60");
+        idle_entry.set_width_chars(6);
+        idle_entry.set_max_width_chars(6);
+        idle_entry.set_input_purpose(gtk4::InputPurpose::Digits);
+
+        let dec_btn = gtk4::Button::with_label("−");
+        let inc_btn = gtk4::Button::with_label("+");
+
+        {
+            let e = idle_entry.clone();
+            dec_btn.connect_clicked(move |_| {
+                let v: u64 = e.text().parse().unwrap_or(60);
+                e.set_text(&v.saturating_sub(1).max(1).to_string());
+            });
+        }
+        {
+            let e = idle_entry.clone();
+            inc_btn.connect_clicked(move |_| {
+                let v: u64 = e.text().parse().unwrap_or(60);
+                e.set_text(&(v + 1).min(86400).to_string());
+            });
+        }
+
         let idle_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         idle_box.append(&gtk4::Label::new(Some("Idle seconds:")));
-        idle_box.append(&idle_spin);
+        idle_box.append(&dec_btn);
+        idle_box.append(&idle_entry);
+        idle_box.append(&inc_btn);
         stack.add_named(&idle_box, Some("idle"));
 
         // "time" page — HH:MM entry + day checkboxes
@@ -93,7 +116,7 @@ impl TriggerSelector {
             });
         }
 
-        TriggerSelector { widget: vbox, dropdown, process_entry, idle_spin, time_entry, day_buttons, stack }
+        TriggerSelector { widget: vbox, dropdown, process_entry, idle_entry, time_entry, day_buttons, stack }
     }
 
     pub fn load(&self, trigger: &Trigger) {
@@ -118,7 +141,7 @@ impl TriggerSelector {
             }
             Trigger::SessionIdle { seconds } => {
                 self.dropdown.set_selected(4);
-                self.idle_spin.set_value(*seconds as f64);
+                self.idle_entry.set_text(&seconds.to_string());
                 self.stack.set_visible_child_name("idle");
             }
             Trigger::SessionActive => {
@@ -158,7 +181,10 @@ impl TriggerSelector {
                 if name.is_empty() { return None; }
                 Some(Trigger::ProcessStop { process_name: name })
             }
-            4 => Some(Trigger::SessionIdle { seconds: self.idle_spin.value() as u64 }),
+            4 => {
+                let seconds = self.idle_entry.text().parse().unwrap_or(60);
+                Some(Trigger::SessionIdle { seconds })
+            }
             5 => Some(Trigger::SessionActive),
             6 => Some(Trigger::Suspend),
             7 => Some(Trigger::Resume),
