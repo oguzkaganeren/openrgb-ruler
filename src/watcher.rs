@@ -89,7 +89,7 @@ fn evaluate_trigger(
         let Ok(guard) = rules.read() else { return };
         guard
             .iter()
-            .find(|r| r.enabled && triggers_match(&r.trigger, event))
+            .find(|r| r.enabled && r.triggers.iter().any(|t| triggers_match(t, event)))
             .map(|r| (r.action.clone(), r.device_target.clone(), r.name.clone()))
     }; // lock released before the (potentially slow) openrgb call
 
@@ -231,11 +231,11 @@ async fn process_watcher(rules: Arc<RwLock<Vec<Rule>>>, event_tx: mpsc::Sender<W
             guard
                 .iter()
                 .filter(|r| r.enabled)
-                .filter_map(|r| match &r.trigger {
+                .flat_map(|r| r.triggers.iter().filter_map(|t| match t {
                     Trigger::ProcessStart { process_name }
                     | Trigger::ProcessStop { process_name } => Some(process_name.clone()),
                     _ => None,
-                })
+                }))
                 .collect()
         };
 
@@ -275,7 +275,7 @@ async fn time_watcher(rules: Arc<RwLock<Vec<Rule>>>, event_tx: mpsc::Sender<Watc
 
         let has_time_rule = {
             let Ok(guard) = rules.read() else { continue };
-            guard.iter().any(|r| r.enabled && matches!(&r.trigger, Trigger::TimeOfDay { .. }))
+            guard.iter().any(|r| r.enabled && r.triggers.iter().any(|t| matches!(t, Trigger::TimeOfDay { .. })))
         };
         if !has_time_rule {
             continue;

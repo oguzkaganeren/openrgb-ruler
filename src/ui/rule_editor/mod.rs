@@ -100,7 +100,7 @@ pub fn open_editor(
     // --- Load existing rule ---
     if let Some(ref rule) = existing_rule {
         name_entry.set_text(&rule.name);
-        trigger_sel.load(&rule.trigger);
+        trigger_sel.load(&rule.triggers);
         action_sel.load(&rule.action);
         device_sel.load(&rule.device_target);
     }
@@ -161,7 +161,7 @@ pub fn open_editor(
             }
             name_entry_c.remove_css_class("error");
 
-            let Some(trigger) = trigger_c.get_trigger() else { return; };
+            let Some(triggers) = trigger_c.get_triggers() else { return; };
             let Some(action) = action_c.get_action() else { return; };
             let device_target = device_c.get_target();
 
@@ -169,7 +169,7 @@ pub fn open_editor(
                 id: rule_id.clone(),
                 name,
                 enabled: initial_enabled,
-                trigger,
+                triggers,
                 action,
                 device_target,
             };

@@ -22,14 +22,41 @@ pub struct RgbDevice {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(from = "RuleRaw")]
 pub struct Rule {
     pub id: String,
     pub name: String,
     pub enabled: bool,
-    pub trigger: Trigger,
+    pub triggers: Vec<Trigger>,
     pub action: RgbAction,
     #[serde(default)]
     pub device_target: DeviceTarget,
+}
+
+/// Raw deserialization helper — supports old single-`trigger` format and new `triggers` array.
+#[derive(Deserialize)]
+struct RuleRaw {
+    id: String,
+    name: String,
+    enabled: bool,
+    #[serde(default)]
+    triggers: Vec<Trigger>,
+    trigger: Option<Trigger>,
+    action: RgbAction,
+    #[serde(default)]
+    device_target: DeviceTarget,
+}
+
+impl From<RuleRaw> for Rule {
+    fn from(raw: RuleRaw) -> Self {
+        let mut triggers = raw.triggers;
+        if triggers.is_empty() {
+            if let Some(t) = raw.trigger {
+                triggers.push(t);
+            }
+        }
+        Rule { id: raw.id, name: raw.name, enabled: raw.enabled, triggers, action: raw.action, device_target: raw.device_target }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
