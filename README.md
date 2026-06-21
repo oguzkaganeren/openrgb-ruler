@@ -40,14 +40,14 @@ Replace manual shell scripts with a GUI-configurable rules engine — lock your 
 
 ### Arch Linux (AUR)
 
-```bash
-# Using an AUR helper
-yay -S openrgb-ruler-git
+Available on the AUR:
 
-# Or manually
-git clone https://github.com/oguzkaganeren/openrgb-ruler
-cd openrgb-ruler
-makepkg -si
+- **[openrgb-ruler](https://aur.archlinux.org/packages/openrgb-ruler)** — stable release
+- **openrgb-ruler-git** — latest from `main`
+
+```bash
+# Stable release (recommended)
+yay -S openrgb-ruler
 ```
 
 ### Build from Source
